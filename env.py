@@ -229,7 +229,11 @@ class UR5PickEnviornment:
         # HINT: You might want to tune optional parameters of p.calculateInverseKinematics for better performance (though this is not strictly necessary)
         # Then move the robot to the computed IK joint angles
         # ===============================
-        raise NotImplementedError
+        joint_positions = p.calculateInverseKinematics(self.robot_body_id, self.robot_end_effector_link_index, position, orientation)
+        # returns a list of joint positions for each degree of freedom, so the length of this list is the number of degrees of freedom of the joints
+        self.move_joints(joint_positions, acceleration=acceleration, speed=speed)
+        # def move_joints(self, target_joint_state, acceleration=10, speed=3.0):
+
        
     def robot_go_home(self, speed=3.0):
         self.move_joints(self.robot_home_joint_config, speed=speed)
@@ -269,9 +273,19 @@ class UR5PickEnviornment:
         # 6. Move robot to robot_home_joint_config
         # 7. Detect whether or not the object was grasped and return grasp_success
         # ============================
-        raise NotImplementedError
 
+        self.open_gripper()
+        # def move_tool(self, position, orientation, acceleration=10, speed=3.0):
+        self.move_tool(pre_grasp_position_over_bin, gripper_orientation)
+        self.move_tool(grasp_position, gripper_orientation)
+        self.close_gripper()
+        self.move_tool(post_grasp_position, gripper_orientation)
+        self.robot_go_home()
+        grasp_success = self.check_grasp_success()
         return grasp_success
+
+
+
 
     def execute_place(self):
         self.move_joints([
