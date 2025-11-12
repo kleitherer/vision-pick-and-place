@@ -1,61 +1,46 @@
-# Vision-based Pick-and-Place System #
-
----
+# Vision-based Pick-and-Place System
 
 ## Problem 1: Sampling-based Method (RRT) for C-Space Exploration and Goal-Finding
 
-In this problem, we implement a Rapidly-exploring Random Tree (RRT) to explore a **2D configuration space (C-space)** defined by the two revolute joint angles of a planar robot arm:
-\[
-\theta_1, \theta_2 \in [0, 360)
-\]
-The configuration space wraps around the boundary, forming a **torus** topology.  
-Each node in the RRT corresponds to a joint configuration \( N = \langle \theta_1, \theta_2 \rangle \).
-
-We use the **Manhattan (L₁) distance metric**:
-\[
-d_{L1}(A,B) = \min(|\theta_{1A}-\theta_{1B}|,\,360-|\,\theta_{1A}-\theta_{1B}|) + \min(|\theta_{2A}-\theta_{2B}|,\,360-|\,\theta_{2A}-\theta_{2B}|)
-\]
-and a **fixed step size of 10°** to generate new nodes.
-
-RRT is chosen over PRM (Probabilistic Roadmap) since it efficiently **biases exploration toward the goal** while maintaining randomized coverage of the C-space.
+We run RRT in **configuration space** (C-space) with wrapping:
+- Joint ranges: \( \theta_1, \theta_2 \in [0, 360) \) (torus topology)
+- Distance metric: Manhattan \(L_1\) with wrap per joint  
+  \( d_{\text{circ}}(\alpha,\beta)=\min(|\alpha-\beta|,\,360-|\,\alpha-\beta\,|) \)  
+  \( d^{\text{torus}}_{L1}((\theta_1,\theta_2),(\phi_1,\phi_2))=d_{\text{circ}}(\theta_1,\phi_1)+d_{\text{circ}}(\theta_2,\phi_2) \)
+- Step size: **10°**
 
 ### Iteration Overview
-
-- **Iteration 1:**  
-  - Sample \( N_{\text{rand}} = \langle 70, 100 \rangle \)  
-  - Nearest node \( N_{\text{near}} = \langle 90, 120 \rangle \)  
-  - Step vector = \( (-5, -5) \)  
-  - New node \( N_{\text{new}} = \langle 85, 115 \rangle \)  
-  - **Valid (free space)** ✅  
-
-- **Iteration 2:**  
-  - Sample \( N_{\text{rand}} = \langle 200, 120 \rangle \) (inside obstacle)  
-  - Grow from \( \langle 90, 120 \rangle \) since it’s closer than \( \langle 85, 115 \rangle \)  
-  - Step vector = \( (10, 0) \)  
-  - New node \( N_{\text{new}} = \langle 100, 120 \rangle \)  
-  - **Valid (free space)** ✅  
-
-- **Iteration 3:**  
-  - Sample \( N_{\text{rand}} = \langle 360, 115 \rangle \equiv \langle 0, 115 \rangle \)  
-  - Wrap-around distance used (due to C-space torus)  
-  - Nearest node \( N_{\text{near}} = \langle 85, 115 \rangle \)  
-  - Step vector = \( (-10, 0) \)  
-  - New node \( N_{\text{new}} = \langle 75, 115 \rangle \)  
-  - **Valid (free space)** ✅  
-
-Through these iterations, the RRT incrementally explores the configuration space while respecting both the obstacle region and the wrap-around boundary conditions.
-
----
+- **Iter 1:** sample \(N_{\text{rand}}=\) ⟨70, 100⟩; grow from ⟨90, 120⟩.  
+  \(d_{L1}=|{-20}|+|{-20}|=40\), step \(=10\cdot(-20/40,-20/40)=(-5,-5)\) → **⟨85, 115⟩** (valid)
+- **Iter 2:** sample \(N_{\text{rand}}=\) ⟨200, 120⟩ (inside obstacle); nearest is ⟨90, 120⟩.  
+  \(d_{L1}=110\), step \(=(10,0)\) → **⟨100, 120⟩** (valid)
+- **Iter 3 (wrap):** sample \(N_{\text{rand}}=\) ⟨360, 115⟩ ≡ ⟨0, 115⟩.  
+  Distances: from ⟨85,115⟩ → \(85\); ⟨90,120⟩ → \(95\); ⟨100,120⟩ → \(105\).  
+  Nearest ⟨85,115⟩; step \(=10\cdot(-85/85,0)=(-10,0)\) → **⟨75, 115⟩** (valid)
 
 ## Problem 2: Kinematics
 
-In this section, we analyze the robot’s **forward kinematics** to determine the camera’s pose in the world frame.  
-Given that the camera is rigidly attached to the end-effector, we compute:
-\[
-{}^{w}\!T_c = {}^{w}\!T_1 \, {}^{1}\!T_c
-\]
-where each transformation encodes a rotation by the joint angle and a translation along the corresponding link length.
+Camera pose in world frame:
+$$ {}^{w}\!T_c = {}^{w}\!T_1 \, {}^{1}\!T_c $$
 
-We use homogeneous transformation matrices to describe both joint rotations and link translations, allowing us to express the camera pose \( {}^{w}\!T_c \) and the observed object position in world coordinates \( {}^{w}\!P = {}^{w}\!T_c \, {}^{c}\!P \).
+With standard planar 2R (no \(d\), \(\alpha=0\)):
+$$
+{}^{w}\!T_{1} =
+\begin{bmatrix}
+\cos\theta_1 & -\sin\theta_1 & 0 & a_1\cos\theta_1\\
+\sin\theta_1 & \cos\theta_1  & 0 & a_1\sin\theta_1\\
+0&0&1&0\\
+0&0&0&1
+\end{bmatrix},
+\qquad
+{}^{1}\!T_{c} =
+\begin{bmatrix}
+\cos\theta_2 & -\sin\theta_2 & 0 & a_2\cos\theta_2\\
+\sin\theta_2 & \cos\theta_2  & 0 & a_2\sin\theta_2\\
+0&0&1&0\\
+0&0&0&1
+\end{bmatrix}.
+$$
 
----
+World point from camera point \( {}^{c}\!P \):
+$$ {}^{w}\!P = {}^{w}\!T_c \, {}^{c}\!P. $$
