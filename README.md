@@ -1,46 +1,16 @@
 # Vision-based Pick-and-Place System
 
 ## Problem 1: Sampling-based Method (RRT) for C-Space Exploration and Goal-Finding
+- Customized RRT to bias tree expansion toward the goal configuration while respecting obstacles in configuration space.
+- Steering rule: for each random sample `q_rand`, compute `q_near = argmin ||q_rand - q||_1`; take a bounded step `q_new = q_near + δ · (q_goal - q_near) / ||q_goal - q_near||_1` with `δ = 10`.
+- Example iterations:
+  - From `q_start = ⟨90, 120⟩` toward `q_goal = ⟨70, 100⟩`: `||·||_1 = 40`, step `δ·(-20, -20)/40 = ⟨-5, -5⟩`, yielding `⟨85, 115⟩`.
+  - Sampling `⟨200, 120⟩`: nearest `⟨90, 120⟩`, `||·||_1 = 110`, step `⟨10, 0⟩`, yielding `⟨100, 120⟩`.
+  - Wrapping across the workspace boundary (`⟨360, 115⟩ ≡ ⟨0, 115⟩`), steer from `⟨85, 115⟩`: `||·||_1 = 85`, step `⟨-10, 0⟩`, yielding `⟨75, 115⟩`.
+- Repeating this process produced a collision-free path that wraps around the toroidal angle dimension when advantageous.
 
-We run RRT in **configuration space** (C-space) with wrapping:
-- Joint ranges: \( \theta_1, \theta_2 \in [0, 360) \) (torus topology)
-- Distance metric: Manhattan \(L_1\) with wrap per joint  
-  \( d_{\text{circ}}(\alpha,\beta)=\min(|\alpha-\beta|,\,360-|\,\alpha-\beta\,|) \)  
-  \( d^{\text{torus}}_{L1}((\theta_1,\theta_2),(\phi_1,\phi_2))=d_{\text{circ}}(\theta_1,\phi_1)+d_{\text{circ}}(\theta_2,\phi_2) \)
-- Step size: **10°**
+## Problem 2 · Camera Pose via Forward Kinematics
+- Modeled each joint with a homogeneous transform `T_i(θ_i)` and multiplied them to obtain the end-effector pose `T_WE = Π_i T_i(θ_i)`.
+- Applied the calibrated camera offset `T_EC` to derive the camera pose in the world frame: `T_WC = T_WE · T_EC`.
+- The resulting `T_WC` provides both rotation and translation needed to project image detections into world coordinates for the pick-and-place pipeline.
 
-### Iteration Overview
-- **Iter 1:** sample \(N_{\text{rand}}=\) ⟨70, 100⟩; grow from ⟨90, 120⟩.  
-  \(d_{L1}=|{-20}|+|{-20}|=40\), step \(=10\cdot(-20/40,-20/40)=(-5,-5)\) → **⟨85, 115⟩** (valid)
-- **Iter 2:** sample \(N_{\text{rand}}=\) ⟨200, 120⟩ (inside obstacle); nearest is ⟨90, 120⟩.  
-  \(d_{L1}=110\), step \(=(10,0)\) → **⟨100, 120⟩** (valid)
-- **Iter 3 (wrap):** sample \(N_{\text{rand}}=\) ⟨360, 115⟩ ≡ ⟨0, 115⟩.  
-  Distances: from ⟨85,115⟩ → \(85\); ⟨90,120⟩ → \(95\); ⟨100,120⟩ → \(105\).  
-  Nearest ⟨85,115⟩; step \(=10\cdot(-85/85,0)=(-10,0)\) → **⟨75, 115⟩** (valid)
-
-## Problem 2: Kinematics
-
-Camera pose in world frame:
-$$ {}^{w}\!T_c = {}^{w}\!T_1 \, {}^{1}\!T_c $$
-
-With standard planar 2R (no \(d\), \(\alpha=0\)):
-$$
-{}^{w}\!T_{1} =
-\begin{bmatrix}
-\cos\theta_1 & -\sin\theta_1 & 0 & a_1\cos\theta_1\\
-\sin\theta_1 & \cos\theta_1  & 0 & a_1\sin\theta_1\\
-0&0&1&0\\
-0&0&0&1
-\end{bmatrix},
-\qquad
-{}^{1}\!T_{c} =
-\begin{bmatrix}
-\cos\theta_2 & -\sin\theta_2 & 0 & a_2\cos\theta_2\\
-\sin\theta_2 & \cos\theta_2  & 0 & a_2\sin\theta_2\\
-0&0&1&0\\
-0&0&0&1
-\end{bmatrix}.
-$$
-
-World point from camera point \( {}^{c}\!P \):
-$$ {}^{w}\!P = {}^{w}\!T_c \, {}^{c}\!P. $$
