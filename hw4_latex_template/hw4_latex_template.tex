@@ -1,0 +1,276 @@
+\documentclass[12pt,letterpaper]{article}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amscd}
+\usepackage{enumerate}
+\usepackage{fancyhdr}
+\usepackage{mathrsfs}
+\usepackage{bbm}
+\usepackage{framed}
+\usepackage{mdframed}
+\usepackage{listings}
+\usepackage{cancel}
+\usepackage{mathtools}
+\usepackage{verbatim}
+\usepackage{enumitem}
+\usepackage[T1]{fontenc}
+\usepackage{soul}
+\usepackage[letterpaper,voffset=-.5in,bmargin=3cm,footskip=1cm]{geometry}
+\usepackage[colorlinks = true]{hyperref} 
+\setlength{\parindent}{0.0in}
+\setlength{\parskip}{0.1in}
+\allowdisplaybreaks
+\headheight 15pt
+\headsep 10pt
+\newcommand\N{\mathbb N}
+\newcommand\Z{\mathbb Z}
+\newcommand\R{\mathbb R}
+\newcommand\Q{\mathbb Q}
+\newcommand\lcm{\operatorname{lcm}}
+\newcommand\setbuilder[2]{\ensuremath{\left\{#1\;\middle|\;#2\right\}}}
+\newcommand\E{\operatorname{E}}
+\newcommand\V{\operatorname{V}}
+\newcommand\Pow{\ensuremath{\operatorname{\mathcal{P}}}}
+
+\DeclarePairedDelimiter\ceil{\lceil}{\rceil}
+\DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
+\newcommand\hint[1]{\textbf{Hint}: #1}
+\newcommand\note[1]{\textbf{Note}: #1}
+
+\lstset{
+  basicstyle=\ttfamily,
+  columns=fullflexible,
+  frame=single,
+  breaklines=true,
+  postbreak=\mbox{\textcolor{red}{$\hookrightarrow$}},
+}
+
+\fancypagestyle{firstpagestyle} {
+  \renewcommand{\headrulewidth}{0pt}
+  \lhead{\textbf{Robot Perception}}
+  \chead{\textbf{}}
+  \rhead{Fall 25-26}
+}
+
+\pagestyle{fancyplain}
+\usepackage{tikz}
+
+\begin{document}
+  \thispagestyle{firstpagestyle}
+  \begin{center}
+    {\huge \textbf{Homework 4}}
+  \end{center}
+
+\subsection*{Instructions}
+    In this homework assignment, we will continue to develop the remaining building blocks for a vision-based pick-and-place system. By the end of this assignment, we will complete the first version of our pick-and-place system --
+    time to get excited! 
+    
+    This homework has three problems. Problem 1, basic concept review. Problem 2, coding assignment. Problem 3, discussion and analysis.  For Problems 1 and 3, please compile your answers in a PDF titled \texttt{hw4.pdf}.  For Problem 2, you will directly edit Python files provided by us. 
+
+
+    \textbf{Submission:}  
+    Compress \begin{itemize}
+        \item \texttt{hw4\_report.pdf} 
+        \item code files \texttt{env.py} and \texttt{perception.py}
+        \item video of the robot execution for 2.3 (video or shareable link in pdf)
+    \end{itemize} 
+    into \texttt{SUID\_hw4.zip}, and upload it to Canvas before the homework deadline. 
+    
+    \textbf{Due Date:} By 5:00 PM PST, Friday, Nov 14, 2025.
+    
+\subsection*{Problem 1 Concepts (45 pts) }
+
+\subsubsection*{1.1 Rapidly-exploring Random Trees (RRT) -- 15 points}
+Given a two link robot arm with two revolute joints, let’s define its configuration space (without obstacle) as $\theta_1 \in [0,360), \theta_2 \in [0,360)$,  which wraps around on the boundary.  There exists a C-space obstacle  is shown below: 
+
+
+{
+    \begin{figure}[h]
+    \includegraphics[scale=.4]{2024F/HW4/figures/Exam_RRT.png}
+    \centering
+    \end{figure}
+}
+
+Now, we want to find a path from the starting point $N_{start} <90,120>$ to the goal point $N_{goal} <360,115>$ while avoiding the obstacles using RRT. Assume the step size is 10, and we use L1 distance as the distance metric. Let’s complete the following steps. Note that the graph only contains $N_{start}$ before the 1st iteration ($N_{goal}$ is not part of the starting search graph as we are not doing bidirectional RRT in this problem).
+
+
+1) (5 points) 1st iteration: random sampled point is $N_{rand} =<70,100>$   
+What is the nearest Node $N_{near}$?
+What is the new Node $N_{new}$ added to the tree?
+Is $N_{new}$ valid? 
+\textcolor{blue}{\textbf{Answer:}
+Write your answer here}
+
+2) (5 points) 2nd iteration: random sampled point is $N_{rand} = <200,120>$   ($N_{new}$ from the 1st iteration is on the graph already)
+What is the nearest Node $N_{near}$?
+What is the new Node $N_{new}$ added to the tree?
+Is $N_{new}$ valid? 
+\textcolor{blue}{\textbf{Answer:}
+Write your answer here}
+
+3) (5 points) 3rd iteration: random sampled point is $N_{goal}$, (the nodes from the 1st and 2nd iterations are still on the graph)
+What is the nearest Node $N_{near}$?
+What is the new Node $N_{new}$ added to the tree?
+Is $N_{new}$ valid? 
+\textcolor{blue}{\textbf{Answer:}
+Write your answer here}
+
+\subsubsection*{1.2 Kinematics \& Pick and Place -- 30 points}
+We have a two-link arm, shown below. Define the world coordinate in the robot base as shown below. All joints are revolute joints that rotate along the axis (pointing outward of the paper) with joint angle $<\theta_1, \theta_2>$ and link length $a_1 = 1, \; a_2 = 1$.  Assume we mount a camera on the robot’s end-effector, with the camera coordinate defined as shown. The camera is rigidly attached to the second link.
+
+{
+    \begin{figure}[h]
+    \includegraphics[scale=.7]{2024F/HW4/figures/hw_FK.png}
+    \centering
+    \end{figure}
+}
+
+1) (20 points)  Write down the camera pose in world frame $^{w}T_c$ in the form of $\theta_1, \theta_2, a_1,  a_2$. Please express your answer in matrix form and you may express your answer as a product of matrices (you do not need to compute this product). Make sure to include $a_1$ and $a_2$ in your answer and to use 3D homogenous coordinates (meaning your transformation matrices are 4x4).
+\textcolor{blue}{\textbf{Answer:}
+Write your answer here}
+
+2) (10 points)  When $\theta_1 = \pi/2 ,  \theta_2 = -\pi/2$,  the robot is able to observe the target object and its position in camera frame is $^cP  = <1,0,0>$, what is the object’s position in world coordinate frame $^wP$? Is this object within the robot’s reach range? Why? 
+\textcolor{blue}{\textbf{Answer:}
+Write your answer here}
+
+\subsection*{Problem 2 Implementation (40 pts) }
+
+Please implement the following functions in \texttt{env.py} and \texttt{perception.py}.
+
+\begin{lstlisting}[language=Python]
+env.py
+    move_tool()  -- 10 points 
+    execute_grasp() -- 10 points
+preception.py
+    pose_est_segicp()  -- 15 points
+Record final video -- 5 points
+\end{lstlisting}
+
+\subsubsection*{Setup simulation environment}
+Same as the previous homework, install the relevant packages and start the environment. You do not need a GPU for this assignment. 
+\begin{center}\texttt{mamba env create -f environment.yaml}\end{center}
+
+After installation, you can check whether they are properly installed by running the following command: 
+
+\begin{center}\texttt{python pose\_based\_pnp.py -{}-check\_sim}\end{center}
+
+If everything is installed successfully, you should be able to use the pybullet simulation environment with UR5 robot, two bins and 4 objects (see figure below). The task for this assignment is to make the robot pick up all the objects in one bin and place them in the other. 
+{
+    \begin{figure}[h]
+    \includegraphics[scale=0.3]{figures/sim.png}
+    \centering
+    \end{figure}
+    }
+
+    
+In the terminal, you can see the following text:\\ 
+\texttt{Environment successfully loaded. Press Ctrl-C in terminal to exit ...} \\
+
+\textbf{Notes on PyBullet}:
+This assignment uses PyBullet simulation engine extensively. We highly recommend to read the \textit{Introduction} section in \href{https://docs.google.com/document/d/10sXEhzFRSnvFcl3XxNGhnD4N2SedqwdAvK3dsihxVUA}{PyBullet API documentation} to get some working knowledge of the engine. To interact with the simulation GUI, you can change the camera viewpoint by zooming in/out or pressing \textit{ctrl} key and dragging the cursor at the same time. Pressing \textit{g} key will toggle the windows on the sides.
+
+Read \texttt{class UR5PickEnviornment} initialization function to see how we load robots and objects in the environment, and how we add a top-down camera to this environment. 
+While we provide this part of the code in this assignment, it is important to understand them so that you can setup your own environment in the future for different projects, robots and tasks. 
+
+
+\subsubsection*{System Overview.} 
+The overall system has four high-level steps. In this assignment, we will first implement other parts of the system assuming ground truth state using \texttt{pose\_est\_state()}, then we will return to implement the perception module \texttt{pose\_est\_segicp()} and put everything together.   
+\begin{lstlisting}[language=Python]
+Step 1: Get top-down camera observation 
+    env.observe() -- return RGB-D image, we provide 
+Step 2: Estimate object poses using either 
+    pose_est_state() -- using simulation state, we provide 
+    pose_est_segicp() -- using pose estimation, you implement 
+Step 3: Compute grasp pose from object pose
+    env.ob_pos_to_ee_pos()
+Step 4: Execute pick and place action
+    env.execute_grasp() -- you implement 
+    env.execute_place() -- we provide 
+\end{lstlisting}
+
+
+
+\subsubsection*{2.1: Compute robot target configuration using IK -- \texttt{move\_tool()}}
+Complete this function that moves the robot tool (end-effector) to a specified pose. To do so, please use the PyBullet inverse kinematics function \newline (called \texttt{p.calculateInverseKinematics}) to find out the target joint configuration of the robot to reach the desired \texttt{end\_effector} position and orientation.
+\newline \texttt{p.calculateInverseKinematics} takes in the end effector link index and not the joint index. You can use \texttt{ self.robot\_end\_effector\_link\_index} for this. 
+HINT:  You might want to tune optional parameters of \texttt{p.calculateInverseKinematics} for better performance.
+
+        
+\subsubsection*{2.2: Implement the grasping primitive -- \texttt{execute\_grasp()}} 
+Implement the following sequence of action for grasping. Read and understand other functions we implemented for you in the \texttt{env.py} file, and use them to complete this primitive. 
+
+\vspace{-2mm}
+\begin{enumerate}
+    \vspace{-2mm}\item open gripper
+    \vspace{-2mm}\item Move gripper to pre\_grasp\_position\_over\_bin
+    \vspace{-2mm}\item Move gripper to grasp\_position
+    \vspace{-2mm}\item Close gripper
+    \vspace{-2mm}\item Move gripper to post\_grasp\_position
+    \vspace{-2mm}\item Move robot to robot\_home\_joint\_config
+    \vspace{-2mm}\item Detect whether or not the object was grasped and return grasp\_success
+\end{enumerate}
+\vspace{-2mm}
+Once you implement this part you can run the code.\\
+\textbf{Note}: setting \texttt{-{}-use\_state} will have the robot use the ground truth object poses to plan grasps.
+
+\begin{center}\texttt{python pose\_based\_pnp.py -{}-use\_state}\end{center}
+The robot should be able to pick up all objects and transport them to the other bin. 
+Note that the grasp may not always be successful; observe the typical failures. Question to think about: How do we check the grasp success? (no written response needed)
+
+\subsubsection*{2.3: Implement pose estimation algorithm} 
+Finally, use the functions you implemented in the previous homework to complete this pose estimation algorithm by implementing \texttt{pose\_est\_segicp} in perception.py. To simplify the implementation, here we assume the ground truth object segmentation is provided (skipping the UNet training and inference part). However, you still need to 1) get the object point cloud from mask and depth. 2) get object model point cloud. 3) use ICP to align this two-point cloud and get the object pose. 
+
+Once you implement this part you can run the code (here the robot uses ICP rather than ground truth state): 
+
+\begin{center}\texttt{python pose\_based\_pnp.py}\end{center}
+
+The robot should will attempt to pick up all objects and transport them to the other bin. 
+Note that the grasp success is much lower now with the estimated pose.
+
+Record a video of the final system executing all four grasps with the ICP method for object pose detection. The system does not need to be perfect (the video should show at least two successful grasps); it's ok if you need to rerun a couple times before you get two successful grasps in one video. You can use any app (e.g., zoom) to screen record the video.  
+
+In Problem 3, we will look closer at the failure cases. 
+
+
+\section*{Problem 3 Discussion (15 pts)}
+
+\subsubsection*{3.1 Visualization \& Failure mode -- 6 pts} 
+1) (2 points) Check the visualization of the pose estimation result (saved in \texttt{`./debug'}). Screenshot them and include them in your report. Below is an example of the visualization for the tennis ball.
+
+{
+\begin{figure}[h]
+\includegraphics[scale=1]{figures/result.png}
+\centering
+\end{figure}
+}
+  
+2) (2 points) Look at the visualization and robot behavior. Describe two common failure modes with this pick-and-place system. For example, in the earlier visualization, red is the prediction, and green is the observed surface, they are close but not exactly aligned, why?
+\textcolor{blue}{\textbf{Answer:}
+Write your answer here}
+
+3) (2 points) Based on the common failure modes, list two ways to improve the result.
+\textcolor{blue}{\textbf{Answer:}
+Write your answer here}
+
+
+\subsubsection*{3.2 Assumptions  -- 9 points} 
+1) (5 points) The current system does not consider obstacles in the environment. Describe how you could incorporate collision avoidance in the system using algorithms we learned in class. Which aspects need to be changed and what algorithms/methods could we use to enable collision avoidance? 
+\textcolor{blue}{\textbf{Answer:}
+Write your answer here}
+
+2) (4 points) List out at least 5 major assumptions we made in this pick-and-place system that may not be true in a real-world pick-and-place system. (Max: 100 words) \\
+\textcolor{blue}{\textbf{Answer:}
+Write your answer here}
+
+\section*{Submission checklist}
+When you are done, create a new folder called \texttt{SUID\_hw4} (replacing with your SUID) and copy in the required items listed below into the root directory of that folder. Then zip the folder into \texttt{SUID\_hw4.zip} and upload to Canvas. Double check your submission contains:
+
+\begin{enumerate}
+    \item \texttt{hw4\_report.pdf}: that includes answers to P1 and P3. 
+    \item Completed python code: \texttt{env.py, preception.py}  
+    \item Video of the robot execution. If the video is too big, create a shareable link (e.g., upload to Google Drive) and include the link in the report. Double-check check the link is viewable to anyone. 
+\end{enumerate}
+
+\end{document}
