@@ -229,7 +229,7 @@ class UR5PickEnviornment:
         # HINT: You might want to tune optional parameters of p.calculateInverseKinematics for better performance (though this is not strictly necessary)
         # Then move the robot to the computed IK joint angles
         # ===============================
-        joint_positions = p.calculateInverseKinematics(self.robot_body_id, self.robot_end_effector_link_index, position, orientation)
+        joint_positions = p.calculateInverseKinematics(self.robot_body_id, self.robot_end_effector_link_index, position, orientation, maxNumIterations=1000)
         # returns a list of joint positions for each degree of freedom, so the length of this list is the number of degrees of freedom of the joints
         self.move_joints(joint_positions, acceleration=acceleration, speed=speed)
         # def move_joints(self, target_joint_state, acceleration=10, speed=3.0):

@@ -12,6 +12,10 @@ def pose_est_state(obj_id, env):
 def pose_est_segicp(obj_id, obj_name, depth_obs, mask, intrinsic_matrix, view_matrix):
     # TODO: Use the functions you implemented in previous hw to complete this part. 
     # Hints: functions provided in icp.py  
+#     However, you still need
+# to 1) get the object point cloud from mask and depth. 2) get object model point
+# cloud. 3) use ICP to align this two-point cloud and get the object pose
+
     # Input: 
     #   obj_id, int corresponding the index on mask, 
     #           used to find observed object pointcloud in depth. 
@@ -19,7 +23,19 @@ def pose_est_segicp(obj_id, obj_name, depth_obs, mask, intrinsic_matrix, view_ma
     #            used to load object model pointcloud. 
     # Goal find object pose [4x4] matrix using ICP 
 
-    obj_pose = ...
+    # def estimate_pose(depth, mask, camera, view_matrix):
+    pts_depth = icp.obj_depth2pts(obj_id, depth_obs, mask, intrinsic_matrix, view_matrix)
+    pts_mesh = icp.obj_mesh2pts(obj_name, point_num=len(pts_depth))
+    obj_pose = icp.align_pts(pts_mesh, pts_depth)
+
+    
+    # obj_pts = icp.obj_depth2pts(obj_id, depth_obs, mask, intrinsic_matrix, view_matrix)
+    # # world_pts: Numpy array [n, 3], 3D points in the world frame of reference.
+
+    # #
+    # obj_mesh = icp.obj_mesh2pts(obj_name, )
+    # # pts: Numpy array [n, 3], sampled point cloud.
+
 
     # Convert object pose to quaternion. 
     pos =  obj_pose[0:3,3].T
