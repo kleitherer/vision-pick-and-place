@@ -25,16 +25,11 @@ def pose_est_segicp(obj_id, obj_name, depth_obs, mask, intrinsic_matrix, view_ma
 
     # def estimate_pose(depth, mask, camera, view_matrix):
     pts_depth = icp.obj_depth2pts(obj_id, depth_obs, mask, intrinsic_matrix, view_matrix)
+    # returns Numpy array [n, 3], 3D points in the world frame of reference.
     pts_mesh = icp.obj_mesh2pts(obj_name, point_num=len(pts_depth))
+    # returns Numpy array [n, 3], sampled point cloud.
+
     obj_pose = icp.align_pts(pts_mesh, pts_depth)
-
-    
-    # obj_pts = icp.obj_depth2pts(obj_id, depth_obs, mask, intrinsic_matrix, view_matrix)
-    # # world_pts: Numpy array [n, 3], 3D points in the world frame of reference.
-
-    # #
-    # obj_mesh = icp.obj_mesh2pts(obj_name, )
-    # # pts: Numpy array [n, 3], sampled point cloud.
 
 
     # Convert object pose to quaternion. 
