@@ -56,3 +56,6 @@ Assumptions:
 We didn't consider obstacles in our environment, but we have collision-detection algorithms like Rapidly-Exploring Random Tree which can help us explore an unknown space by incrementally searching the configuration space for a solution. It would make sure the robot never selects an action that would land us in the obstacle space. To deploy it, we would need to make sure we created a C-space and defined our obstacle vs free space. 
 
 First, it never considered that the objects could be partially occluded, i.e. lighting was ideal. Second, it never considered that the object could not be rigid under the robot's grasp (strawberry could get mushy under grip). Third, it never considered that there may be a grasp pose that's not possible for the robot (i.e. outside of the robot's reach range). Fourth, it assumed that the robot's hardware execution was perfect. Fifth, the scene was clutter free and there was nothing in the way of the robot grasping one object (like another object).
+
+
+Another limitation of this system is that we need to know the objects beforehand, because we need scene data to train the segmentation network and object 3D models to perform ICP.
